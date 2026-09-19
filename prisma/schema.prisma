@@ -1,0 +1,154 @@
+// Moon Restaurant POS — Prisma schema (SQLite)
+// Enums are plain Strings (SQLite has no native enum support in Prisma);
+// valid values are enforced in the main-process service layer.
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  username     String   @unique
+  passwordHash String
+  role         String // ADMIN | CASHIER
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders    Order[]
+  auditLogs AuditLog[]
+}
+
+model Category {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+
+  menuItems MenuItem[]
+}
+
+model MenuItem {
+  id         String   @id @default(cuid())
+  name       String
+  sizeMode   String   @default("NORMAL") // NORMAL | HALF_FULL
+  price      Float? // used when sizeMode = NORMAL
+  halfPrice  Float? // used when sizeMode = HALF_FULL
+  fullPrice  Float? // used when sizeMode = HALF_FULL
+  imagePath  String?
+  available  Boolean  @default(true)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  orderNumber   String   @unique // e.g. ORD-1001
+  status        String // PENDING | PAID | CANCELLED
+  subtotal      Float    @default(0)
+  discount      Float    @default(0)
+  tax           Float    @default(0)
+  total         Float    @default(0)
+  paymentMethod String? // CASH | ONLINE | OTHER
+  paidAt        DateTime?
+  billPrintCount Int      @default(0)
+  billPrintedAt  DateTime?
+  isDeleted     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  cashierId String
+  cashier   User   @relation(fields: [cashierId], references: [id])
+
+  items  OrderItem[]
+  tokens ProductionToken[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([paidAt])
+}
+
+model OrderItem {
+  id             String  @id @default(cuid())
+  orderId        String
+  order          Order   @relation(fields: [orderId], references: [id])
+  menuItemId     String?
+  menuItem       MenuItem? @relation(fields: [menuItemId], references: [id])
+
+  // snapshots — never change after creation, even if the menu changes later
+  nameSnapshot   String
+  priceSnapshot  Float
+  variant        String? // HALF | FULL | null — which size was ordered, if any
+
+  quantity  Int
+  lineTotal Float
+  status    String @default("ACTIVE") // ACTIVE | REMOVED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  token ProductionToken?
+
+  @@index([orderId])
+}
+
+model ProductionToken {
+  id          String   @id @default(cuid())
+  tokenNumber Int      @unique // sequential, globally unique, zero-padded on display
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  orderItemId String    @unique
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+
+  itemName    String
+  quantity    Int
+  status      String @default("QUEUED") // QUEUED | PRINTED | READY | COMPLETED | CANCELLED
+
+  printedAt   DateTime?
+  printCount  Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  details    String? // JSON string
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+model Counter {
+  name  String @id
+  value Int    @default(0)
+}
+
+model Settings {
+  key   String @id
+  value String
+}

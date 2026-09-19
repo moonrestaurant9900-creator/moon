@@ -1,0 +1,87 @@
+{
+  "name": "moon-restaurant-pos",
+  "version": "1.0.0",
+  "description": "Moon Restaurant - Parcel/Counter POS",
+  "main": "./out/main/index.js",
+  "author": "Moon Restaurant",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:push": "prisma db push",
+    "dist": "npm run build && electron-builder",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.20.0",
+    "bcryptjs": "^2.4.3",
+    "exceljs": "^4.4.0",
+    "jimp": "^1.6.1",
+    "lucide-react": "^1.47.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "electron": "^31.4.0",
+    "electron-builder": "^24.13.3",
+    "electron-vite": "^2.3.0",
+    "postcss": "^8.4.45",
+    "prisma": "^5.20.0",
+    "tailwindcss": "^3.4.10",
+    "tsx": "^4.23.13",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.4"
+  },
+  "build": {
+    "appId": "com.moonrestaurant.pos",
+    "productName": "Moon Restaurant POS",
+    "files": [
+      "out/**/*",
+      "node_modules/**/*",
+      "!node_modules/prisma/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "prisma/schema.prisma",
+        "to": "prisma/schema.prisma"
+      },
+      {
+        "from": "resources/scripts",
+        "to": "scripts"
+      },
+      {
+        "from": "resources/logo.jpg",
+        "to": "logo.jpg"
+      },
+      {
+        "from": "node_modules/.prisma",
+        "to": "app.asar.unpacked/node_modules/.prisma"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Moon Restaurant POS",
+      "artifactName": "Restaurant-POS-Setup.exe",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
